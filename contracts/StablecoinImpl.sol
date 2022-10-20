@@ -28,6 +28,10 @@ contract StablecoinImpl is ERC20Permit {
         _;
     }
 
+    function changeMultiSig(address _what) external onlyMultisig {
+        multiSigWallet = IMultiSigWallet(_what);
+    }
+
     function mint(address _who, uint256 amount) external onlyMultisig {
         _mint(_who, amount);
     }
