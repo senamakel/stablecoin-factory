@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import hre, { ethers, network } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 export const wait = (ms: number) =>
@@ -18,6 +17,7 @@ export default async function verifyContract(
       constructorArguments,
     });
   } catch (error: any) {
+    console.log(error);
     if (error.name !== "NomicLabsHardhatPluginError") {
       console.error(`- Error verifying: ${error.name}`);
       console.error(error);
@@ -26,12 +26,13 @@ export default async function verifyContract(
 }
 
 export const saveABI = (
+  hre: HardhatRuntimeEnvironment,
   key: string,
   abi: string,
   address: string,
   verified: boolean
 ) => {
-  const filename = `./deployments/${network.name}.json`;
+  const filename = `./deployments/${hre.network.name}.json`;
 
   let outputFile: any = {};
   if (fs.existsSync(filename)) {
@@ -46,11 +47,14 @@ export const saveABI = (
   };
 
   fs.writeFileSync(filename, JSON.stringify(outputFile, null, 2));
-  console.log(`saved ${key}:${address} into ${network.name}.json`);
+  console.log(`saved ${key}:${address} into ${hre.network.name}.json`);
 };
 
-export const getOutput = (_network?: string) => {
-  const filename = `./deployments/${_network || network.name}.json`;
+export const getOutput = (
+  hre: HardhatRuntimeEnvironment,
+  _network?: string
+) => {
+  const filename = `./deployments/${_network || hre.network.name}.json`;
 
   let outputFile: any = {};
   if (fs.existsSync(filename)) {
@@ -61,54 +65,63 @@ export const getOutput = (_network?: string) => {
   return outputFile;
 };
 
-export const getOutputAddress = (key: string, _network?: string) => {
-  const outputFile = getOutput(_network);
+export const getOutputAddress = (
+  hre: HardhatRuntimeEnvironment,
+  key: string,
+  _network?: string
+) => {
+  const outputFile = getOutput(hre, _network);
   if (!outputFile[key]) return;
   return outputFile[key].address;
 };
 
 export const deployOrLoad = async (
+  hre: HardhatRuntimeEnvironment,
   key: string,
   contractName: string,
   args: any[]
 ) => {
-  const addr = await getOutputAddress(key);
+  const addr = await getOutputAddress(hre, key);
   if (addr) {
     console.log(`using ${key} at ${addr}`);
-    return await ethers.getContractAt(contractName, addr);
+    return await hre.ethers.getContractAt(contractName, addr);
   }
 
-  const { provider } = ethers;
+  const { provider } = hre.ethers;
   const estimateGasPrice = await provider.getGasPrice();
   const gasPrice = estimateGasPrice.mul(5).div(4);
 
   console.log(
-    `\ndeploying ${key} at ${ethers.utils.formatUnits(gasPrice, `gwei`)} gwei`
+    `\ndeploying ${key} at ${hre.ethers.utils.formatUnits(
+      gasPrice,
+      `gwei`
+    )} gwei`
   );
-  const factory = await ethers.getContractFactory(contractName);
+  const factory = await hre.ethers.getContractFactory(contractName);
   const instance = await factory.deploy(...args, { gasPrice });
   await instance.deployed();
   console.log(
     `${instance.address} -> tx hash: ${instance.deployTransaction.hash}`
   );
 
-  await saveABI(key, contractName, instance.address, false);
+  await saveABI(hre, key, contractName, instance.address, false);
   return instance;
 };
 
 export const deployOrLoadAndVerify = async (
+  hre: HardhatRuntimeEnvironment,
   key: string,
   contractName: string,
   args: any[],
   delay: number = 0
 ) => {
-  const instance = await deployOrLoad(key, contractName, args);
+  const instance = await deployOrLoad(hre, key, contractName, args);
 
-  const outputFile = getOutput();
+  const outputFile = getOutput(hre);
   if (!outputFile[key].verified) {
     await wait(delay);
     await verifyContract(hre, instance.address, args);
-    await saveABI(key, contractName, instance.address, true);
+    await saveABI(hre, key, contractName, instance.address, true);
   }
 
   return instance;

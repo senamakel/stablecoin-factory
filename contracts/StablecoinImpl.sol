@@ -5,8 +5,8 @@ import {ERC20, EIP712, ERC20Permit} from "@openzeppelin/contracts/token/ERC20/ex
 import {IMultiSigWallet} from "./IMultiSigWallet.sol";
 
 contract StablecoinImpl is ERC20Permit {
-    IMultiSigWallet multiSigWallet;
-    mapping(address => bool) isFrozen;
+    IMultiSigWallet public multiSigWallet;
+    mapping(address => bool) public isFrozen;
 
     event FrozenStatus(address indexed from, address indexed who, bool status);
 
