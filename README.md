@@ -1,13 +1,13 @@
-# Sample Hardhat Project
+# Stablecoin Contracts
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
-
-Try running some of the following tasks:
+To deploy the mutlisig wallet run
 
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+npx hardhat deploy-multisig --owners 0x61837551968B5496c63EbCC82cBfE2C8e1Fe798c,0x4D3150f1D4B4Aef92BEB9a88f3DC2901C75BcCec,0xbA8DEBc3AF79b77BD2a6b39B02004257557C7953 --network goerli
+```
+
+To deploy a stablecoin run
+
+```shell
+npx hardhat deploy-stablecoin --symbol USDA --name "USDA Coin" --network goerli
 ```
