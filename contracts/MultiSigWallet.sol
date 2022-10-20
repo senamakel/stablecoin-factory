@@ -43,42 +43,42 @@ contract MultiSigWallet {
     }
 
     modifier onlyWallet() {
-        require(msg.sender == address(this));
+        require(msg.sender == address(this), "only wallet");
         _;
     }
 
     modifier ownerDoesNotExist(address owner) {
-        require(!isOwner[owner]);
+        require(!isOwner[owner], "owner exists");
         _;
     }
 
     modifier ownerExists(address owner) {
-        require(isOwner[owner]);
+        require(isOwner[owner], "owner does not exist");
         _;
     }
 
     modifier transactionExists(uint256 transactionId) {
-        require(transactions[transactionId].destination != address(0));
+        require(transactions[transactionId].destination != address(0), '!transactionExists');
         _;
     }
 
     modifier confirmed(uint256 transactionId, address owner) {
-        require(confirmations[transactionId][owner]);
+        require(confirmations[transactionId][owner], '!confirmed');
         _;
     }
 
     modifier notConfirmed(uint256 transactionId, address owner) {
-        require(!confirmations[transactionId][owner]);
+        require(!confirmations[transactionId][owner], '!notConfirmed');
         _;
     }
 
     modifier notExecuted(uint256 transactionId) {
-        require(!transactions[transactionId].executed);
+        require(!transactions[transactionId].executed, '!notExecuted');
         _;
     }
 
     modifier notNull(address _address) {
-        require(_address != address(0));
+        require(_address != address(0), '!notNull');
         _;
     }
 
@@ -87,7 +87,8 @@ contract MultiSigWallet {
             ownerCount <= MAX_OWNER_COUNT &&
                 _required <= ownerCount &&
                 _required != 0 &&
-                ownerCount != 0
+                ownerCount != 0,
+                '!validRequirement'
         );
         _;
     }
@@ -228,14 +229,8 @@ contract MultiSigWallet {
         if (isConfirmed(transactionId)) {
             Transaction storage txn = transactions[transactionId];
             txn.executed = true;
-            if (
-                external_call(
-                    txn.destination,
-                    txn.value,
-                    txn.data.length,
-                    txn.data
-                )
-            ) emit Execution(transactionId);
+            if (external_call(txn.destination, txn.value, txn.data))
+                emit Execution(transactionId);
             else {
                 emit ExecutionFailure(transactionId);
                 txn.executed = false;
@@ -248,27 +243,10 @@ contract MultiSigWallet {
     function external_call(
         address to,
         uint256 value,
-        bytes memory data,
-        uint256 txGas
+        bytes memory data
     ) private returns (bool) {
-        bool result;
-        uint256 gasNeeded = gasleft() - 2500;
-
-        assembly {
-            result := call(
-                gasNeeded, // 34710 is the value that solidity is currently emitting
-                // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
-                // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
-                to,
-                value,
-                add(data, 0x20),
-                mload(data), // Size of the input (in bytes) - this is what fixes the padding problem
-                0,
-                0 // Output is ignored, therefore the output size is zero
-            )
-        }
-
-        return result;
+        (bool success, ) = to.call{value: value}(data);
+        return success;
     }
 
     /// @dev Returns the confirmation status of a transaction.
