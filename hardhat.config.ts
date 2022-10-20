@@ -7,8 +7,6 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "hardhat-abi-exporter";
-import "@nomiclabs/hardhat-vyper";
 
 dotenv.config();
 
@@ -39,7 +37,7 @@ const config: HardhatUserConfig & any = {
             runs: 100,
           },
         },
-      }
+      },
     ],
   },
   networks: {
@@ -83,14 +81,6 @@ const config: HardhatUserConfig & any = {
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
-  },
-  abiExporter: {
-    path: "./output/abis/",
-    runOnCompile: true,
-    clear: true,
-    flat: true,
-    spacing: 2,
-    pretty: true,
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

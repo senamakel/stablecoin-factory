@@ -1,20 +1,15 @@
-import { ethers } from "hardhat";
-
-import {deployOrLoadAndVerify} from './deployOrLoadAndVerify';
+import { deployOrLoadAndVerify, getOutputAddress } from "./utils";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const wallet = await getOutputAddress("MultiSigWallet");
+  const name = "USDB Coin";
+  const symbol = "USDB";
 
-  const lockedAmount = ethers.utils.parseEther("1");
-
-  const Lock = await deployOrLoadAndVerify("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-  await lock.deployed();
-
-  console.log(`Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`);
+  await deployOrLoadAndVerify(symbol, "StablecoinImpl", [
+    name, // string memory _name,
+    symbol, // string memory _symbol,
+    wallet, // address _wallet
+  ]);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
